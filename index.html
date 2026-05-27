@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="iPhone Alert">
+<title>iPhone Alert – OLX Monitor</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --surface2: #1e1e1e;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --accent: #e8ff47;
+  --accent2: #b8ff00;
+  --text: #f0f0f0;
+  --muted: #666;
+  --muted2: #999;
+  --red: #ff453a;
+  --green: #30d158;
+  --orange: #ff9f0a;
+  --blue: #0a84ff;
+  --tag-good: rgba(48,209,88,0.15);
+  --tag-good-text: #30d158;
+  --tag-ok: rgba(255,159,10,0.15);
+  --tag-ok-text: #ff9f0a;
+  --tag-bad: rgba(255,69,58,0.15);
+  --tag-bad-text: #ff453a;
+  --tag-new: rgba(232,255,71,0.15);
+  --tag-new-text: #e8ff47;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  overflow: hidden;
+}
+
+/* ── App Shell ── */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 430px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.header {
+  padding: env(safe-area-inset-top, 44px) 20px 0;
+  background: var(--bg);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.header-inner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px 0 12px;
+  border-bottom: 0.5px solid var(--border);
+}
+
+.logo {
+  display: flex;
+  flex-direction: column;
+}
+
+.logo-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1;
+  color: var(--text);
+}
+
+.logo-title span { color: var(--accent); }
+
+.logo-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted2);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.live-dot {
+  width: 6px; height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: blink 2s ease infinite;
+}
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+.header-actions { display: flex; gap: 8px; align-items: center; }
+
+.icon-btn {
+  width: 40px; height: 40px;
+  background: var(--surface);
+  border: 0.5px solid var(--border2);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 16px;
+  position: relative;
+  transition: background 0.15s;
+}
+.icon-btn:active { background: var(--surface2); }
+.notif-badge {
+  position: absolute;
+  top: -3px; right: -3px;
+  background: var(--red);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  min-width: 16px; height: 16px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--bg);
+  padding: 0 3px;
+}
+
+/* ── Location Bar ── */
+.location-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 0.5px solid var(--border);
+}
+
+.location-bar svg { flex-shrink: 0; color: var(--accent); }
+
+.location-text {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--muted2);
+  flex: 1;
+}
+.location-text strong { color: var(--text); }
+
+.location-edit {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--accent);
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 0.5px solid rgba(232,255,71,0.3);
+}
+
+/* ── Filter Pills ── */
+.filter-row {
+  display: flex;
+  gap: 6px;
+  padding: 10px 0 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.filter-row::-webkit-scrollbar { display: none; }
+
+.pill {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 0.5px solid var(--border2);
+  background: var(--surface);
+  color: var(--muted2);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
+  font-weight: 500;
+}
+
+/* ── Feed ── */
+.feed {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 20px 20px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.feed::-webkit-scrollbar { display: none; }
+
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 16px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 0.5px;
+  background: var(--border);
+}
+
+/* ── Listing Card ── */
+.card {
+  background: var(--surface);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  overflow: hidden;
+  transition: transform 0.1s, border-color 0.1s;
+  cursor: pointer;
+}
+.card:active { transform: scale(0.98); }
+.card.is-new { border-color: rgba(232,255,71,0.4); }
+.card.is-new::before {
+  content: '';
+  display: block;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+}
+
+.card-inner { display: flex; gap: 0; }
+
+.card-thumb {
+  width: 86px;
+  min-height: 86px;
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.card-thumb svg { color: var(--muted); opacity: 0.5; }
+
+.new-badge {
+  position: absolute;
+  top: 6px; left: 6px;
+  background: var(--accent);
+  color: #000;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+.card-content { padding: 12px 12px 10px; flex: 1; min-width: 0; }
+
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; margin-bottom: 4px; }
+
+.card-model {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.card-price {
+  font-family: 'DM Mono', monospace;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.tags { display: flex; gap: 4px; flex-wrap: wrap; margin: 6px 0; }
+
+.tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-weight: 500;
+}
+.tag-good { background: var(--tag-good); color: var(--tag-good-text); }
+.tag-ok { background: var(--tag-ok); color: var(--tag-ok-text); }
+.tag-bad { background: var(--tag-bad); color: var(--tag-bad-text); }
+.tag-new-item { background: var(--tag-new); color: var(--tag-new-text); }
+.tag-gray { background: rgba(255,255,255,0.06); color: var(--muted2); }
+
+.card-meta {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.card-footer {
+  border-top: 0.5px solid var(--border);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+}
+.card-footer svg { color: var(--green); }
+
+/* ── Bottom Tabs ── */
+.tab-bar {
+  display: flex;
+  background: var(--surface);
+  border-top: 0.5px solid var(--border2);
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+  flex-shrink: 0;
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 0;
+  cursor: pointer;
+  color: var(--muted);
+  transition: color 0.15s;
+  font-size: 9px;
+  font-family: 'DM Mono', monospace;
+}
+.tab svg { width: 22px; height: 22px; }
+.tab.active { color: var(--accent); }
+
+/* ── Modal / Sheet ── */
+.sheet-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 100;
+  display: flex; align-items: flex-end;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.sheet-overlay.open { opacity: 1; pointer-events: all; }
+
+.sheet {
+  background: var(--surface);
+  border-radius: 24px 24px 0 0;
+  width: 100%;
+  padding: 0 20px calc(env(safe-area-inset-bottom, 20px) + 20px);
+  max-height: 92dvh;
+  overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+}
+.sheet-overlay.open .sheet { transform: translateY(0); }
+
+.sheet-handle {
+  width: 36px; height: 4px;
+  background: var(--border2);
+  border-radius: 2px;
+  margin: 12px auto 20px;
+}
+
+.sheet-title {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 20px;
+  letter-spacing: -0.5px;
+}
+
+/* ── Form Elements ── */
+.form-group { margin-bottom: 16px; }
+.form-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.form-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.form-input:focus { border-color: var(--accent); }
+.form-input option { background: #1e1e1e; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.btn-primary {
+  width: 100%;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: opacity 0.15s, transform 0.1s;
+  letter-spacing: -0.3px;
+}
+.btn-primary:active { opacity: 0.85; transform: scale(0.98); }
+
+/* ── Active Alert Card ── */
+.alert-card {
+  background: var(--surface2);
+  border: 0.5px solid rgba(232,255,71,0.25);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.alert-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.alert-card-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+.toggle-wrap { display: flex; align-items: center; gap: 8px; }
+.toggle-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted2); }
+
+.toggle {
+  width: 44px; height: 26px;
+  background: var(--green);
+  border-radius: 13px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+  border: none;
+  flex-shrink: 0;
+}
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px; right: 3px;
+  width: 20px; height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  transition: right 0.2s;
+}
+.toggle.off { background: var(--surface); border: 0.5px solid var(--border2); }
+.toggle.off::after { right: 21px; }
+
+.alert-params {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.param-chip {
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+.param-key { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); text-transform: uppercase; }
+.param-val { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); margin-top: 2px; }
+
+.delete-btn {
+  margin-top: 10px;
+  width: 100%;
+  background: rgba(255,69,58,0.1);
+  border: 0.5px solid rgba(255,69,58,0.3);
+  border-radius: 8px;
+  padding: 8px;
+  color: var(--red);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 20px) + 80px);
+  left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--surface2);
+  border: 0.5px solid var(--border2);
+  border-radius: 24px;
+  padding: 10px 20px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--text);
+  z-index: 200;
+  opacity: 0;
+  transition: all 0.3s;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Empty state ── */
+.empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+}
+.empty svg { margin-bottom: 16px; opacity: 0.3; }
+.empty h3 { font-size: 18px; color: var(--muted2); margin-bottom: 8px; }
+.empty p { font-family: 'DM Mono', monospace; font-size: 12px; line-height: 1.6; }
+
+/* ── Settings panel ── */
+.setting-row {
+  display: flex; align-items: center;
+  padding: 14px 0;
+  border-bottom: 0.5px solid var(--border);
+  gap: 12px;
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-icon {
+  width: 34px; height: 34px;
+  background: var(--surface2);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.setting-text { flex: 1; }
+.setting-name { font-size: 14px; font-weight: 600; }
+.setting-desc { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted2); margin-top: 2px; }
+
+/* ── Spinner ── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+  vertical-align: -3px;
+}
+
+/* ── Status bar mock for desktop ── */
+@media (min-height: 800px) {
+  .header { padding-top: max(env(safe-area-inset-top, 44px), 44px); }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ── Header ── -->
+  <div class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-title">iPhone<span>Alert</span></div>
+        <div class="logo-sub">
+          <span class="live-dot"></span>
+          <span id="statusText">Inicjalizacja…</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="refreshBtn" onclick="manualRefresh()" title="Odśwież">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+        </button>
+        <button class="icon-btn" onclick="openTab('notifs')" id="bellBtn" title="Powiadomienia">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-badge" id="bellBadge" style="display:none">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Location -->
+    <div class="location-bar">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      <div class="location-text"><strong id="locationName">Warszawa</strong> &nbsp;·&nbsp; <span id="locationRadius">±30 km</span></div>
+      <button class="location-edit" onclick="openSheet('alert')">Zmień →</button>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-row" id="filterRow">
+      <span class="pill active" data-filter="all">Wszystkie</span>
+      <span class="pill" data-filter="new">Nowe dziś</span>
+      <span class="pill" data-filter="perfect">Idealny stan</span>
+      <span class="pill" data-filter="cheap">Do 2000 zł</span>
+      <span class="pill" data-filter="15">iPhone 15</span>
+      <span class="pill" data-filter="14">iPhone 14</span>
+    </div>
+  </div>
+
+  <!-- ── Feed ── -->
+  <div class="feed" id="feed">
+    <div class="empty" id="emptyState" style="display:none">
+      <svg width="60" height="60" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>
+      <h3>Brak ogłoszeń</h3>
+      <p>Zmień filtry lub zwiększ<br>promień wyszukiwania</p>
+    </div>
+    <div id="listingsContainer"></div>
+  </div>
+
+  <!-- ── Tab Bar ── -->
+  <div class="tab-bar">
+    <div class="tab active" data-tab="feed" onclick="openTab('feed')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Ogłoszenia
+    </div>
+    <div class="tab" data-tab="notifs" onclick="openTab('notifs')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      Alerty
+    </div>
+    <div class="tab" data-tab="favorites" onclick="openTab('favorites')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      Ulubione
+    </div>
+    <div class="tab" data-tab="settings" onclick="openTab('settings')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Ustawienia
+    </div>
+  </div>
+</div>
+
+<!-- ── Sheet: New Alert ── -->
+<div class="sheet-overlay" id="sheetAlert" onclick="closeSheetIfBg(event, 'alert')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Nowy alert</div>
+
+    <div class="form-group">
+      <label class="form-label">Model iPhone</label>
+      <select class="form-input" id="alertModel">
+        <option value="">Wszystkie modele</option>
+        <option value="iPhone+16">iPhone 16</option>
+        <option value="iPhone+15">iPhone 15</option>
+        <option value="iPhone+15+Pro">iPhone 15 Pro</option>
+        <option value="iPhone+14">iPhone 14</option>
+        <option value="iPhone+13">iPhone 13</option>
+        <option value="iPhone+12">iPhone 12</option>
+        <option value="iPhone+SE">iPhone SE</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Miejscowość</label>
+      <input class="form-input" id="alertCity" type="text" placeholder="np. Warszawa" value="Warszawa">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Promień (km)</label>
+        <select class="form-input" id="alertRadius">
+          <option value="15">15 km</option>
+          <option value="30" selected>30 km</option>
+          <option value="50">50 km</option>
+          <option value="100">100 km</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cena max (zł)</label>
+        <input class="form-input" id="alertPrice" type="number" placeholder="np. 4000" value="5000">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Stan</label>
+      <select class="form-input" id="alertCondition">
+        <option value="">Każdy stan</option>
+        <option value="new">Nowy</option>
+        <option value="used">Używany – dobry lub lepszy</option>
+        <option value="perfect">Idealny</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Sprawdzaj co</label>
+      <select class="form-input" id="alertInterval">
+        <option value="5">5 minut</option>
+        <option value="15" selected>15 minut</option>
+        <option value="30">30 minut</option>
+        <option value="60">1 godzinę</option>
+      </select>
+    </div>
+
+    <button class="btn-primary" onclick="saveAlert()">
+      Aktywuj alert 🔔
+    </button>
+  </div>
+</div>
+
+<!-- ── Sheet: Listing Detail ── -->
+<div class="sheet-overlay" id="sheetDetail" onclick="closeSheetIfBg(event, 'detail')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<!-- ── Onboarding Banner ── -->
+<div id="onboardingBanner" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:300;align-items:center;justify-content:center;padding:24px;">
+  <div style="background:#141414;border:0.5px solid rgba(232,255,71,0.3);border-radius:24px;padding:28px 24px;max-width:360px;width:100%;text-align:center;">
+    <div style="font-size:52px;margin-bottom:16px;">📱</div>
+    <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;margin-bottom:8px;">iPhone Alert</div>
+    <div style="font-family:'DM Mono',monospace;font-size:12px;color:#999;line-height:1.7;margin-bottom:24px;">
+      Monitoruj OLX i otrzymuj<br>powiadomienia o nowych<br>ogłoszeniach iPhone w okolicy
+    </div>
+    <div style="background:#1e1e1e;border-radius:12px;padding:14px;margin-bottom:20px;text-align:left;">
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#666;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">Jak działa?</div>
+      <div style="font-family:'DM Mono',monospace;font-size:12px;color:#ccc;line-height:2;">
+        1. Ustaw alert (model, miasto, cena)<br>
+        2. Aplikacja sprawdza OLX co X minut<br>
+        3. Nowe ogłoszenie = powiadomienie push<br>
+        4. Kliknij → otwiera ogłoszenie na OLX
+      </div>
+    </div>
+    <div style="font-family:'DM Mono',monospace;font-size:11px;color:#666;margin-bottom:16px;">
+      💡 Safari → Udostępnij → <strong style="color:#e8ff47">Dodaj do ekranu głównego</strong>
+    </div>
+    <button class="btn-primary" onclick="closeOnboarding()" style="margin-top:0">Zaczynamy →</button>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+const STATE = {
+  alerts: JSON.parse(localStorage.getItem('alerts') || '[]'),
+  listings: JSON.parse(localStorage.getItem('listings') || '[]'),
+  seen: new Set(JSON.parse(localStorage.getItem('seen') || '[]')),
+  notifCount: 0,
+  activeTab: 'feed',
+  activeFilter: 'all',
+  checking: false,
+  intervalHandle: null
+};
+
+// ═══════════════════════════════════════════════════════════
+// SERVICE WORKER
+// ═══════════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    console.log('[App] SW registered');
+    // Listen for SW messages
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data?.type === 'SW_CHECK_OLX') checkAll();
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// NOTIFICATIONS PERMISSION
+// ═══════════════════════════════════════════════════════════
+async function requestNotifPermission() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  const result = await Notification.requestPermission();
+  return result === 'granted';
+}
+
+function sendNotification(title, body, url) {
+  if (Notification.permission !== 'granted') return;
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'SHOW_NOTIF', title, body, url
+    });
+  } else {
+    new Notification(title, { body, icon: './icon-192.png' });
+  }
+  STATE.notifCount++;
+  updateBadge();
+}
+
+function updateBadge() {
+  const badge = document.getElementById('bellBadge');
+  if (STATE.notifCount > 0) {
+    badge.textContent = STATE.notifCount > 9 ? '9+' : STATE.notifCount;
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// OLX FETCHER  (via allorigins CORS proxy)
+// ═══════════════════════════════════════════════════════════
+async function fetchOLX(alert) {
+  const model = alert.model || 'iPhone';
+  const city  = encodeURIComponent(alert.city || 'warszawa').toLowerCase();
+  const price = alert.price ? `&search[filter_float_price:to]=${alert.price}` : '';
+  const radius = alert.radius || 30;
+
+  // Build OLX URL
+  const olxUrl = `https://www.olx.pl/elektronika/telefony/apple-iphone/q-${encodeURIComponent(model)}/?search[city_name]=${city}&search[dist]=${radius}${price}&view=list`;
+
+  // Use allorigins to bypass CORS
+  const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(olxUrl)}`;
+
+  try {
+    const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(15000) });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    const html = json.contents;
+    return parseOLX(html, alert);
+  } catch (err) {
+    console.warn('[OLX] Fetch error:', err.message);
+    return [];
+  }
+}
+
+function parseOLX(html, alert) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const listings = [];
+
+  // OLX listing selectors (works with current OLX PL structure)
+  const cards = doc.querySelectorAll('[data-cy="l-card"], .css-1sw7q4x, li[data-testid]');
+
+  cards.forEach(card => {
+    try {
+      const titleEl = card.querySelector('h6, h4, [data-cy="ad-card-title"]');
+      const priceEl = card.querySelector('[data-testid="ad-price"], .price');
+      const locEl   = card.querySelector('[data-testid="location-date"], .css-veheph');
+      const linkEl  = card.querySelector('a');
+      const imgEl   = card.querySelector('img');
+
+      if (!titleEl) return;
+
+      const title = titleEl.textContent.trim();
+      if (!title.toLowerCase().includes('iphone')) return;
+
+      const priceRaw = priceEl ? priceEl.textContent.trim() : '';
+      const priceParsed = parseInt(priceRaw.replace(/[^\d]/g, '')) || 0;
+
+      // Filter by condition from locEl text or card text
+      const fullText = card.textContent.toLowerCase();
+      let condition = 'unknown';
+      if (fullText.includes('nowy') || fullText.includes('nowa')) condition = 'new';
+      else if (fullText.includes('idealny') || fullText.includes('jak nowy')) condition = 'perfect';
+      else if (fullText.includes('dobry') || fullText.includes('używany')) condition = 'good';
+      else if (fullText.includes('ślad') || fullText.includes('zarys')) condition = 'fair';
+
+      const locText = locEl ? locEl.textContent.trim() : '';
+      const [location, dateStr] = locText.split(' - ').map(s => s.trim());
+
+      const href = linkEl ? linkEl.getAttribute('href') : '';
+      const url = href ? (href.startsWith('http') ? href : 'https://www.olx.pl' + href) : '';
+      const id = url.split('/').filter(Boolean).pop() || Math.random().toString(36).slice(2);
+
+      // Condition filter
+      if (alert.condition === 'new' && condition !== 'new') return;
+      if (alert.condition === 'perfect' && !['new','perfect'].includes(condition)) return;
+      if (alert.condition === 'used' && !['new','perfect','good'].includes(condition)) return;
+
+      listings.push({ id, title, price: priceParsed, priceRaw, condition, location: location || alert.city, date: dateStr || 'dziś', url, img: imgEl?.src || '', alertId: alert.id });
+    } catch {}
+  });
+
+  return listings;
+}
+
+// ═══════════════════════════════════════════════════════════
+// DEMO DATA (when no real data or fetch fails)
+// ═══════════════════════════════════════════════════════════
+function getDemoListings(alert) {
+  const models = ['iPhone 15 Pro 256GB','iPhone 15 128GB','iPhone 14 Pro 512GB','iPhone 14 128GB','iPhone 13 256GB','iPhone 13 mini 128GB','iPhone 12 Pro 128GB','iPhone SE (3. gen) 64GB'];
+  const conditions = ['new','perfect','good','fair'];
+  const condLabels = { new:'Nowy', perfect:'Idealny', good:'Dobry', fair:'Ślady użytkowania' };
+  const cities = ['Warszawa, Mokotów','Pruszków','Piaseczno','Legionowo','Wołomin','Grodzisk Maz.','Warszawa, Ursynów','Ząbki'];
+  const colors = ['Black Titanium','Natural Titanium','Blue Titanium','White','Midnight','Starlight','Green','Purple','(PRODUCT)RED'];
+  const now = Date.now();
+
+  return Array.from({length: 6}, (_, i) => {
+    const basePrice = 900 + Math.floor(Math.random() * 3500);
+    const cond = conditions[Math.floor(Math.random() * conditions.length)];
+    const minsAgo = Math.floor(Math.random() * 180);
+    return {
+      id: 'demo_' + i + '_' + now,
+      title: models[Math.floor(Math.random() * models.length)],
+      price: basePrice,
+      priceRaw: basePrice.toLocaleString('pl') + ' zł',
+      condition: cond,
+      condLabel: condLabels[cond],
+      color: colors[Math.floor(Math.random() * colors.length)],
+      location: cities[Math.floor(Math.random() * cities.length)],
+      date: minsAgo < 60 ? minsAgo + ' min temu' : Math.floor(minsAgo/60) + ' godz. temu',
+      url: 'https://www.olx.pl',
+      isNew: i < 2,
+      demo: true
+    };
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// CHECK ALL ALERTS
+// ═══════════════════════════════════════════════════════════
+async function checkAll() {
+  if (STATE.checking) return;
+  STATE.checking = true;
+  setStatus('<span class="spinner"></span> Sprawdzam OLX…');
+
+  let newCount = 0;
+  const all = [];
+
+  for (const alert of STATE.alerts) {
+    if (!alert.active) continue;
+    let results = await fetchOLX(alert);
+
+    // Fallback to demo if empty
+    if (results.length === 0) {
+      results = getDemoListings(alert);
+    }
+
+    results.forEach(item => {
+      const key = item.id;
+      if (!STATE.seen.has(key)) {
+        item.isNew = true;
+        STATE.seen.add(key);
+        newCount++;
+        sendNotification(
+          '📱 ' + item.title,
+          `${item.priceRaw || item.price + ' zł'} · ${item.location} · ${condLabel(item.condition)}`,
+          item.url
+        );
+      }
+      all.push(item);
+    });
+  }
+
+  // Dedup by id
+  const seen = new Set();
+  const deduped = all.filter(x => { if (seen.has(x.id)) return false; seen.add(x.id); return true; });
+
+  // Keep latest 50
+  STATE.listings = deduped.slice(0, 50);
+  localStorage.setItem('listings', JSON.stringify(STATE.listings));
+  localStorage.setItem('seen', JSON.stringify([...STATE.seen].slice(-200)));
+
+  STATE.checking = false;
+  const now = new Date().toLocaleTimeString('pl', {hour:'2-digit', minute:'2-digit'});
+  setStatus(`Ostatnie sprawdzenie: ${now}`);
+  if (newCount > 0) showToast(`🔔 ${newCount} nowe ogłoszenie${newCount > 1 ? 'a' : ''}!`);
+
+  if (STATE.activeTab === 'feed') renderFeed();
+}
+
+function condLabel(c) {
+  const m = { new:'Nowy', perfect:'Idealny', good:'Dobry', fair:'Ślady użytkowania', unknown:'Nieznany' };
+  return m[c] || c;
+}
+
+function condClass(c) {
+  const m = { new:'tag-new-item', perfect:'tag-good', good:'tag-ok', fair:'tag-bad', unknown:'tag-gray' };
+  return m[c] || 'tag-gray';
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER FEED
+// ═══════════════════════════════════════════════════════════
+function renderFeed() {
+  const container = document.getElementById('listingsContainer');
+  let items = [...STATE.listings];
+
+  // Apply filter
+  switch (STATE.activeFilter) {
+    case 'new': items = items.filter(x => x.isNew); break;
+    case 'perfect': items = items.filter(x => ['new','perfect'].includes(x.condition)); break;
+    case 'cheap': items = items.filter(x => x.price <= 2000); break;
+    case '15': items = items.filter(x => x.title.toLowerCase().includes('15')); break;
+    case '14': items = items.filter(x => x.title.toLowerCase().includes('14')); break;
+  }
+
+  const newItems = items.filter(x => x.isNew);
+  const oldItems = items.filter(x => !x.isNew);
+
+  if (items.length === 0) {
+    document.getElementById('emptyState').style.display = 'block';
+    container.innerHTML = '';
+    return;
+  }
+  document.getElementById('emptyState').style.display = 'none';
+
+  let html = '';
+
+  if (newItems.length > 0) {
+    html += `<div class="section-label">🔴 Nowe ogłoszenia (${newItems.length})</div>`;
+    newItems.forEach(item => html += renderCard(item));
+  }
+
+  if (oldItems.length > 0) {
+    html += `<div class="section-label">Wcześniejsze</div>`;
+    oldItems.forEach(item => html += renderCard(item));
+  }
+
+  container.innerHTML = html;
+  registerItems(items);
+}
+
+function renderCard(item, showFav) {
+  const price = item.priceRaw || (item.price ? item.price.toLocaleString('pl') + ' zł' : '–');
+  const color = item.color ? `<span class="tag tag-gray">${item.color}</span>` : '';
+  const footer = item.isNew
+    ? `<div class="card-footer"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Powiadomienie wysłane</div>`
+    : '';
+  const demoNote = item.demo ? '<span class="tag tag-gray">demo</span>' : '';
+
+  return `
+  <div class="card ${item.isNew ? 'is-new' : ''}" onclick="openDetailById('${item.id}')" data-id="${item.id}">
+    <div class="card-inner">
+      <div class="card-thumb">
+        ${item.isNew ? '<span class="new-badge">NOWE</span>' : ''}
+        <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>
+      </div>
+      <div class="card-content">
+        <div class="card-top">
+          <div class="card-model">${escHtml(item.title)}</div>
+          <div class="card-price">${escHtml(price)}</div>
+        </div>
+        <div class="tags">
+          <span class="tag ${condClass(item.condition)}">${condLabel(item.condition)}</span>
+          ${color}
+          ${demoNote}
+        </div>
+        <div class="card-meta">
+          <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          ${escHtml(item.location || '–')} &nbsp;·&nbsp; ${escHtml(item.date || '')}
+        </div>
+      </div>
+    </div>
+    ${footer}
+  </div>`;
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function openListing(url) { if (url && url !== 'https://www.olx.pl') window.open(url, '_blank'); }
+
+// ═══════════════════════════════════════════════════════════
+// RENDER ALERTS TAB
+// ═══════════════════════════════════════════════════════════
+function renderAlerts() {
+  const container = document.getElementById('listingsContainer');
+  document.getElementById('emptyState').style.display = 'none';
+
+  if (STATE.alerts.length === 0) {
+    container.innerHTML = `
+      <div class="empty">
+        <svg width="60" height="60" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <h3>Brak alertów</h3>
+        <p>Kliknij + żeby dodać<br>pierwszy alert</p>
+      </div>
+      <button class="btn-primary" style="margin-top:0" onclick="openSheet('alert')">+ Dodaj alert</button>`;
+    return;
+  }
+
+  let html = '<div class="section-label">Aktywne alerty</div>';
+  STATE.alerts.forEach((a, idx) => {
+    html += `
+    <div class="alert-card">
+      <div class="alert-card-header">
+        <div class="alert-card-title">${escHtml(a.model || 'Wszystkie iPhone')}</div>
+        <div class="toggle-wrap">
+          <span class="toggle-label">${a.active ? 'wł' : 'wył'}</span>
+          <button class="toggle ${a.active ? '' : 'off'}" onclick="toggleAlert(${idx})"></button>
+        </div>
+      </div>
+      <div class="alert-params">
+        <div class="param-chip"><div class="param-key">Lokalizacja</div><div class="param-val">${escHtml(a.city)}</div></div>
+        <div class="param-chip"><div class="param-key">Promień</div><div class="param-val">±${a.radius} km</div></div>
+        <div class="param-chip"><div class="param-key">Cena max</div><div class="param-val">${a.price ? a.price.toLocaleString('pl') + ' zł' : 'dowolna'}</div></div>
+        <div class="param-chip"><div class="param-key">Sprawdzanie</div><div class="param-val">co ${a.interval} min</div></div>
+      </div>
+      <button class="delete-btn" onclick="deleteAlert(${idx})">Usuń alert</button>
+    </div>`;
+  });
+
+  html += `<button class="btn-primary" onclick="openSheet('alert')">+ Dodaj kolejny alert</button>`;
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER SETTINGS TAB
+// ═══════════════════════════════════════════════════════════
+function renderSettings() {
+  const container = document.getElementById('listingsContainer');
+  document.getElementById('emptyState').style.display = 'none';
+  const notifGranted = Notification.permission === 'granted';
+
+  container.innerHTML = `
+  <div class="section-label">Powiadomienia</div>
+  <div class="alert-card">
+    <div class="setting-row">
+      <div class="setting-icon"><svg width="18" height="18" fill="none" stroke="${notifGranted ? '#30d158' : '#ff453a'}" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+      <div class="setting-text">
+        <div class="setting-name">Powiadomienia push</div>
+        <div class="setting-desc">${notifGranted ? '✅ Przyznano dostęp' : '❌ Brak dostępu – kliknij żeby włączyć'}</div>
+      </div>
+      ${!notifGranted ? `<button class="location-edit" onclick="enableNotifs()">Włącz</button>` : ''}
+    </div>
+  </div>
+
+  <div class="section-label">Dane</div>
+  <div class="alert-card">
+    <div class="setting-row">
+      <div class="setting-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></div>
+      <div class="setting-text">
+        <div class="setting-name">Wyczyść historię</div>
+        <div class="setting-desc">${STATE.listings.length} ogłoszeń w pamięci</div>
+      </div>
+      <button class="location-edit" onclick="clearHistory()">Usuń</button>
+    </div>
+    <div class="setting-row">
+      <div class="setting-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <div class="setting-text">
+        <div class="setting-name">Proxy CORS</div>
+        <div class="setting-desc">allorigins.win · OLX PL</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">O aplikacji</div>
+  <div class="alert-card">
+    <div class="setting-row">
+      <div class="setting-text">
+        <div class="setting-name">iPhone Alert v1.0</div>
+        <div class="setting-desc">PWA · Service Worker · Push Notifications</div>
+      </div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-text">
+        <div class="setting-name">Dodaj do ekranu głównego</div>
+        <div class="setting-desc">Safari → Udostępnij → Dodaj do ekranu głównego</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// ALERT CRUD
+// ═══════════════════════════════════════════════════════════
+async function saveAlert() {
+  const granted = await requestNotifPermission();
+  if (!granted) {
+    showToast('⚠️ Włącz powiadomienia w ustawieniach Safari');
+  }
+
+  const alert = {
+    id: Date.now().toString(),
+    model: document.getElementById('alertModel').value,
+    city: document.getElementById('alertCity').value.trim() || 'Warszawa',
+    radius: parseInt(document.getElementById('alertRadius').value),
+    price: parseInt(document.getElementById('alertPrice').value) || 0,
+    condition: document.getElementById('alertCondition').value,
+    interval: parseInt(document.getElementById('alertInterval').value),
+    active: true
+  };
+
+  STATE.alerts.push(alert);
+  localStorage.setItem('alerts', JSON.stringify(STATE.alerts));
+
+  // Update location display
+  document.getElementById('locationName').textContent = alert.city;
+  document.getElementById('locationRadius').textContent = `±${alert.radius} km`;
+
+  closeSheet('alert');
+  showToast('✅ Alert aktywowany!');
+  startPolling();
+  registerPeriodicSync(alert.interval);
+  setTimeout(() => checkAll(), 500);
+}
+
+function toggleAlert(idx) {
+  STATE.alerts[idx].active = !STATE.alerts[idx].active;
+  localStorage.setItem('alerts', JSON.stringify(STATE.alerts));
+  renderAlerts();
+  if (STATE.alerts[idx].active) startPolling();
+}
+
+function deleteAlert(idx) {
+  STATE.alerts.splice(idx, 1);
+  localStorage.setItem('alerts', JSON.stringify(STATE.alerts));
+  renderAlerts();
+  showToast('Alert usunięty');
+}
+
+// ═══════════════════════════════════════════════════════════
+// POLLING
+// ═══════════════════════════════════════════════════════════
+function startPolling() {
+  if (STATE.intervalHandle) clearInterval(STATE.intervalHandle);
+  const active = STATE.alerts.filter(a => a.active);
+  if (active.length === 0) return;
+  const minInterval = Math.min(...active.map(a => a.interval)) * 60 * 1000;
+  STATE.intervalHandle = setInterval(checkAll, minInterval);
+  console.log('[Poll] interval', minInterval / 1000 / 60, 'min');
+}
+
+async function manualRefresh() {
+  const btn = document.getElementById('refreshBtn');
+  btn.style.opacity = '0.5';
+  await checkAll();
+  btn.style.opacity = '1';
+}
+
+// ═══════════════════════════════════════════════════════════
+// TAB NAVIGATION
+// ═══════════════════════════════════════════════════════════
+function openTab(tab) {
+  STATE.activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+
+  // Reset filter row visibility
+  document.getElementById('filterRow').style.display = tab === 'feed' ? 'flex' : 'none';
+
+  if (tab === 'feed') { renderFeed(); STATE.notifCount = 0; updateBadge(); }
+  else if (tab === 'notifs') renderAlerts();
+  else if (tab === 'favorites') renderFavorites();
+  else if (tab === 'settings') renderSettings();
+}
+
+// ═══════════════════════════════════════════════════════════
+// FILTER
+// ═══════════════════════════════════════════════════════════
+document.getElementById('filterRow').addEventListener('click', e => {
+  const pill = e.target.closest('.pill');
+  if (!pill) return;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  pill.classList.add('active');
+  STATE.activeFilter = pill.dataset.filter;
+  renderFeed();
+});
+
+// ═══════════════════════════════════════════════════════════
+// SHEET
+// ═══════════════════════════════════════════════════════════
+function openSheet(name) {
+  document.getElementById('sheet' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('open');
+}
+function closeSheet(name) {
+  document.getElementById('sheet' + name.charAt(0).toUpperCase() + name.slice(1)).classList.remove('open');
+}
+function closeSheetIfBg(e, name) {
+  if (e.target === e.currentTarget) closeSheet(name);
+}
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function setStatus(text) {
+  document.getElementById('statusText').innerHTML = text;
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+function clearHistory() {
+  STATE.listings = [];
+  STATE.seen = new Set();
+  localStorage.removeItem('listings');
+  localStorage.removeItem('seen');
+  showToast('Historia wyczyszczona');
+  renderSettings();
+}
+async function enableNotifs() {
+  const ok = await requestNotifPermission();
+  showToast(ok ? '✅ Powiadomienia włączone!' : '❌ Odmówiono dostępu');
+  renderSettings();
+}
+
+// ═══════════════════════════════════════════════════════════
+// FAVORITES
+// ═══════════════════════════════════════════════════════════
+function toggleFavorite(id) {
+  const favs = JSON.parse(localStorage.getItem('favs') || '[]');
+  const idx = favs.indexOf(id);
+  if (idx === -1) {
+    favs.push(id);
+    showToast('❤️ Dodano do ulubionych');
+  } else {
+    favs.splice(idx, 1);
+    showToast('Usunięto z ulubionych');
+  }
+  localStorage.setItem('favs', JSON.stringify(favs));
+}
+
+function isFavorite(id) {
+  const favs = JSON.parse(localStorage.getItem('favs') || '[]');
+  return favs.includes(id);
+}
+
+function renderFavorites() {
+  const container = document.getElementById('listingsContainer');
+  document.getElementById('emptyState').style.display = 'none';
+  const favIds = new Set(JSON.parse(localStorage.getItem('favs') || '[]'));
+  const items = STATE.listings.filter(x => favIds.has(x.id));
+  if (items.length === 0) {
+    container.innerHTML = `<div class="empty">
+      <svg width="60" height="60" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <h3>Brak ulubionych</h3>
+      <p>Przytrzymaj kartę ogłoszenia<br>żeby dodać do ulubionych</p>
+    </div>`;
+    return;
+  }
+  let html = '<div class="section-label">Ulubione (' + items.length + ')</div>';
+  items.forEach(item => html += renderCard(item, true));
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════
+// ITEM REGISTRY (for click lookup)
+// ═══════════════════════════════════════════════════════════
+window.__items = {};
+function registerItems(items) { items.forEach(i => { window.__items[i.id] = i; }); }
+
+function openDetailById(id) {
+  const item = window.__items[id] || STATE.listings.find(x => x.id === id);
+  if (item) openDetail(item);
+}
+
+// ═══════════════════════════════════════════════════════════
+// DETAIL SHEET
+// ═══════════════════════════════════════════════════════════
+function openDetail(item) {
+  const price = item.priceRaw || (item.price ? item.price.toLocaleString('pl') + ' zł' : '–');
+  const fav = isFavorite(item.id);
+  document.getElementById('detailContent').innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;">
+      <div>
+        <div style="font-size:20px;font-weight:800;letter-spacing:-0.5px;line-height:1.2;">${escHtml(item.title)}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:500;color:var(--accent);margin-top:6px;">${escHtml(price)}</div>
+      </div>
+      <button onclick="toggleFavorite('${item.id}');document.getElementById('favHeart').textContent='${fav ? '🤍' : '❤️'}'" style="background:var(--surface2);border:0.5px solid var(--border2);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;cursor:pointer;" id="favHeart">${fav ? '❤️' : '🤍'}</button>
+    </div>
+    <div style="background:var(--surface2);border-radius:12px;padding:14px;margin-bottom:16px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="param-chip"><div class="param-key">Stan</div><div class="param-val">${condLabel(item.condition)}</div></div>
+        <div class="param-chip"><div class="param-key">Miejscowość</div><div class="param-val">${escHtml(item.location || '–')}</div></div>
+        <div class="param-chip"><div class="param-key">Dodano</div><div class="param-val">${escHtml(item.date || '–')}</div></div>
+        <div class="param-chip"><div class="param-key">Kolor</div><div class="param-val">${escHtml(item.color || '–')}</div></div>
+      </div>
+    </div>
+    ${item.demo ? '<div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px;">⚠️ Dane demonstracyjne – kliknij Otwórz by zobaczyć prawdziwe ogłoszenia</div>' : ''}
+    <button class="btn-primary" onclick="window.open('${item.url || 'https://www.olx.pl/elektronika/telefony/apple-iphone/'}', '_blank')" style="margin-top:0">
+      Otwórz na OLX →
+    </button>
+    <button onclick="closeSheet('detail')" style="width:100%;background:transparent;border:0.5px solid var(--border2);border-radius:10px;padding:12px;color:var(--muted2);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;margin-top:10px;">Zamknij</button>
+  `;
+  openSheet('detail');
+}
+
+// ═══════════════════════════════════════════════════════════
+// PERIODIC BACKGROUND SYNC REGISTRATION
+// ═══════════════════════════════════════════════════════════
+async function registerPeriodicSync(intervalMinutes) {
+  if (!('serviceWorker' in navigator)) return;
+  const reg = await navigator.serviceWorker.ready;
+  if (!('periodicSync' in reg)) {
+    console.log('[PBS] Not supported in this browser');
+    return;
+  }
+  try {
+    const status = await navigator.permissions.query({ name: 'periodic-background-sync' });
+    if (status.state !== 'granted') {
+      console.log('[PBS] Permission not granted');
+      return;
+    }
+    await reg.periodicSync.register('check-olx-periodic', {
+      minInterval: intervalMinutes * 60 * 1000
+    });
+    console.log('[PBS] Registered with interval', intervalMinutes, 'min');
+  } catch (err) {
+    console.warn('[PBS] Registration failed:', err);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ONBOARDING
+// ═══════════════════════════════════════════════════════════
+function closeOnboarding() {
+  localStorage.setItem('onboarded', '1');
+  const el = document.getElementById('onboardingBanner');
+  el.style.opacity = '0';
+  el.style.transition = 'opacity 0.3s';
+  setTimeout(() => { el.style.display = 'none'; openSheet('alert'); }, 300);
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+function init() {
+  // STATE enrichment: favorites info
+  STATE.favorites = new Set(JSON.parse(localStorage.getItem('favs') || '[]'));
+
+  // Update location display from last alert
+  if (STATE.alerts.length > 0) {
+    const last = STATE.alerts[STATE.alerts.length - 1];
+    document.getElementById('locationName').textContent = last.city;
+    document.getElementById('locationRadius').textContent = `±${last.radius} km`;
+  }
+
+  renderFeed();
+  document.getElementById('filterRow').style.display = 'flex';
+
+  if (STATE.alerts.length > 0) {
+    setStatus('Gotowy');
+    startPolling();
+    setTimeout(checkAll, 800);
+    // Register periodic background sync with shortest interval from alerts
+    const minInterval = Math.min(...STATE.alerts.filter(a => a.active).map(a => a.interval || 15));
+    registerPeriodicSync(minInterval);
+  } else {
+    setStatus('Konfiguracja wymagana');
+    // Show onboarding if first time
+    if (!localStorage.getItem('onboarded')) {
+      setTimeout(() => {
+        const el = document.getElementById('onboardingBanner');
+        el.style.display = 'flex';
+      }, 400);
+    } else {
+      setTimeout(() => openSheet('alert'), 600);
+    }
+  }
+}
+
+init();
+</script>
+</body>
+</html>
