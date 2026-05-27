@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="iPhone Alert">
 <title>iPhone Alert</title>
 <link rel="manifest" href="./manifest.json">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet" crossorigin="anonymous">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 :root {
@@ -282,26 +282,45 @@ function pushNotif(title, body, url) {
 }
 
 // ── OLX Fetch ──────────────────────────────────────────────
-function fetchOLX(alert, cb) {
+function buildOLXUrl(alert) {
   var model = alert.model || 'iPhone';
   var city = encodeURIComponent((alert.city || 'warszawa').toLowerCase());
   var price = alert.price ? '&search[filter_float_price:to]=' + alert.price : '';
   var radius = alert.radius || 30;
-  var olxUrl = 'https://www.olx.pl/elektronika/telefony/apple-iphone/q-' + encodeURIComponent(model) + '/?search[city_name]=' + city + '&search[dist]=' + radius + price;
-  var proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(olxUrl);
+  return 'https://www.olx.pl/elektronika/telefony/apple-iphone/q-' + encodeURIComponent(model) + '/?search[city_name]=' + city + '&search[dist]=' + radius + price;
+}
 
+function fetchOLX(alert, cb) {
+  var olxUrl = buildOLXUrl(alert);
+  // Try multiple CORS proxies in sequence
+  var proxies = [
+    'https://api.allorigins.win/get?url=' + encodeURIComponent(olxUrl),
+    'https://corsproxy.io/?' + encodeURIComponent(olxUrl),
+    'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(olxUrl)
+  ];
+  tryProxy(proxies, 0, alert, cb);
+}
+
+function tryProxy(proxies, idx, alert, cb) {
+  if (idx >= proxies.length) { cb([]); return; }
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', proxyUrl);
-  xhr.timeout = 15000;
+  xhr.open('GET', proxies[idx]);
+  xhr.timeout = 12000;
   xhr.onload = function() {
     try {
-      var json = JSON.parse(xhr.responseText);
-      var results = parseOLX(json.contents, alert);
-      cb(results);
-    } catch(e) { cb([]); }
+      var text = xhr.responseText;
+      // allorigins wraps in JSON
+      if (text.indexOf('"contents"') > -1) {
+        var json = JSON.parse(text);
+        text = json.contents || text;
+      }
+      var results = parseOLX(text, alert);
+      if (results.length > 0) { cb(results); }
+      else { tryProxy(proxies, idx + 1, alert, cb); }
+    } catch(e) { tryProxy(proxies, idx + 1, alert, cb); }
   };
-  xhr.onerror = function() { cb([]); };
-  xhr.ontimeout = function() { cb([]); };
+  xhr.onerror = function() { tryProxy(proxies, idx + 1, alert, cb); };
+  xhr.ontimeout = function() { tryProxy(proxies, idx + 1, alert, cb); };
   xhr.send();
 }
 
@@ -339,7 +358,16 @@ function parseOLX(html, alert) {
         if (alert.condition === 'new' && cond !== 'new') return;
         if (alert.condition === 'perfect' && cond !== 'new' && cond !== 'perfect') return;
         if (alert.condition === 'good' && cond !== 'new' && cond !== 'perfect' && cond !== 'good') return;
-        results.push({ id: id, title: title, price: priceNum, priceRaw: priceRaw, condition: cond, location: location, date: dateStr, url: url });
+        var imgEl = card.querySelector('img');
+        var img = '';
+        if (imgEl) {
+          img = imgEl.getAttribute('src') || imgEl.getAttribute('data-src') || imgEl.getAttribute('data-lazy-src') || '';
+          // OLX uses srcset sometimes
+          if (!img && imgEl.getAttribute('srcset')) {
+            img = imgEl.getAttribute('srcset').split(',')[0].trim().split(' ')[0];
+          }
+        }
+        results.push({ id: id, title: title, price: priceNum, priceRaw: priceRaw, condition: cond, location: location, date: dateStr, url: url, img: img });
       } catch(e) {}
     });
   } catch(e) {}
@@ -386,7 +414,7 @@ function checkAll() {
 
   activeAlerts.forEach(function(alert) {
     fetchOLX(alert, function(results) {
-      if (results.length === 0) results = demoListings(alert);
+      if (results.length === 0) { results = demoListings(alert); }
 
       results.forEach(function(item) {
         if (seen.indexOf(item.id) === -1) {
@@ -504,11 +532,13 @@ function openDetail(id) {
   if (!item) return;
   var price = item.priceRaw || (item.price ? item.price.toLocaleString('pl') + ' zł' : '–');
   var isFav = favs.indexOf(item.id) > -1;
+  currentDetailUrl = item.url || 'https://www.olx.pl/elektronika/telefony/apple-iphone/';
   document.getElementById('detailBody').innerHTML =
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;gap:12px;">' +
     '<div><div style="font-size:20px;font-weight:800;letter-spacing:-.5px;line-height:1.2">' + esc(item.title) + '</div>' +
     '<div style="font-family:DM Mono,monospace;font-size:22px;color:var(--accent);margin-top:6px">' + esc(price) + '</div></div>' +
     '<button onclick="toggleFav(\'' + item.id + '\')" id="favBtn" style="background:var(--surface2);border:.5px solid var(--border);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;flex-shrink:0">' + (isFav ? '❤️' : '🤍') + '</button></div>' +
+    (item.img && item.img.indexOf('http') === 0 ? '<div style="border-radius:14px;overflow:hidden;margin-bottom:14px;background:var(--surface2);height:200px"><img src="' + item.img + '" style="width:100%;height:200px;object-fit:cover" onerror="this.parentElement.innerHTML='<div style=height:200px;display:flex;align-items:center;justify-content:center;font-size:60px>📱</div>'"></div>' : '<div style="border-radius:14px;background:var(--surface2);height:140px;display:flex;align-items:center;justify-content:center;font-size:60px;margin-bottom:14px">📱</div>') +
     '<div style="background:var(--surface2);border-radius:12px;padding:14px;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
     '<div class="pc"><div class="pk">Stan</div><div class="pv">' + condLabel(item.condition) + '</div></div>' +
     '<div class="pc"><div class="pk">Miejscowość</div><div class="pv">' + esc(item.location) + '</div></div>' +
@@ -516,9 +546,17 @@ function openDetail(id) {
     '<div class="pc"><div class="pk">Cena</div><div class="pv">' + esc(price) + '</div></div>' +
     '</div>' +
     (item.demo ? '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px">⚠️ Dane demo — kliknij Otwórz by zobaczyć prawdziwe ogłoszenia</div>' : '') +
-    '<button class="btn" onclick="window.open(\'' + (item.url || 'https://www.olx.pl/elektronika/telefony/apple-iphone/') + '\',\'_blank\')">Otwórz na OLX →</button>' +
+    '<button class="btn" onclick="goToOLX()">Otwórz na OLX →</button>' +
     '<button class="btn2" onclick="closeSheet(\'detail\')">Zamknij</button>';
   openSheet('detail');
+}
+
+var currentDetailUrl = '';
+
+function goToOLX() {
+  if (currentDetailUrl) {
+    window.location.href = currentDetailUrl;
+  }
 }
 
 function toggleFav(id) {
